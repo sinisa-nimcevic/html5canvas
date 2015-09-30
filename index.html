@@ -1,0 +1,285 @@
+<!doctype html>
+<html class="no-js" lang="">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <title></title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <!-- Place favicon.ico in the root directory -->
+        <style type="text/css">
+        body {text-align:center;font-family:'Helvetica Neue', helvetica, sans-serif;}
+        canvas {border: 1px solid #ededed;border-top:0;border-left:0;margin:40px auto;display:block;}
+        h2 {font-family:Georgia,'Times New Roman', serif;text-align:center;margin-bottom:0;}
+        p {margin:0 0 35px 0;}
+        button {padding:6px 20px;width:210px;color:white;font-weight:700;border:none;outline:none;cursor:pointer;opacity:0.8;margin:2px 20px;}
+        button:active {opacity: 1}
+        .start-button{background-color:#38C9CC;}
+        .stop-button {background-color:#DE2244;}
+        .reset-button {background-color:#bdbdbd;}
+        </style>
+
+    </head>
+    <body>
+
+    	<h2>HTML5 canvas</h2>
+    	<p>celular automation</p>
+
+    	<button onclick="automation.start()" class="start-button" type="button">START</button>
+    	<button onclick="automation.stop()" class="stop-button" type="button">STOP</button><br/><br/>
+    	<button onclick="automation.reset('acorn')" class="reset-button" type="button">RESET(ACORN)</button>
+    	<button onclick="automation.reset('gosper-glider-gun')" class="reset-button" type="button">RESET(GLIDER GUN)</button>
+
+        <canvas id="canvas" width="900" height="500"></canvas>
+
+<script type="text/javascript">
+
+
+/* html5 canvas exercise */
+
+/* CONWAY'S GAME OF LIFE */
+
+
+
+// basic setup
+
+var canvas = document.getElementById("canvas");
+var ctx = canvas.getContext("2d");
+
+var drawingSurface = {};
+drawingSurface.width = canvas.width;
+drawingSurface.height = canvas.height;
+
+var step = 10;
+var pace = 80;
+
+var box = {};
+box.width = step-1;
+box.height = step-1;
+box.colorLive = "#B3FFC6";
+box.colorDead = "#66FF33";
+box.x = 1;
+box.y = 1;
+
+var animate = null;
+
+//functionality
+
+var gridMatrix = {
+	size : {
+		'x' : drawingSurface.width/step,
+		'y' : drawingSurface.height/step
+	},
+	color : "#efefef",
+	cell : 'empty',
+	populateGrid : function(){
+		this.cell = [];
+		var x = this.size.x;
+		var y = this.size.y;
+		for (var a = 0; a<x; a++) {
+			gridMatrix.cell[a] = [];
+			var b= 0;
+			while(b < y) {
+				var col = [];
+				gridMatrix.cell[a].push(col);
+				gridMatrix.cell[a][b].push(0); // push initial status
+				gridMatrix.cell[a][b].push(0); // push initial neighbour count
+				b++;
+			}
+		}
+	},
+	resetGrid : function() {
+		this.cell=[];
+		this.populateGrid();
+	},
+	drawGrid : function() {
+		ctx.clearRect(0, 0, drawingSurface.width, drawingSurface.height);
+		for (var x = 0.5; x < drawingSurface.width; x += step) {
+	  		ctx.moveTo(x, 0);
+	  		ctx.lineTo(x, drawingSurface.height);
+		}
+		for (var y = 0.5; y < drawingSurface.height; y += step) {
+	  		ctx.moveTo(0, y);
+	  		ctx.lineTo(drawingSurface.width, y);
+		}
+		ctx.strokeStyle = this.color;
+		ctx.stroke();
+	}
+};
+
+function setCellStatus(x,y,s) {
+	gridMatrix.cell[x][y][0]=s;
+}
+
+function addNeighbours(a,b) {
+	var x = a;
+	var y = b;
+
+	var xmin = x-1;
+	var xmax = x+1;
+	var ymin = y-1;
+	var ymax = y+1;
+
+	if(xmin<0) {
+		xmin = gridMatrix.size.x-1;
+	}
+
+	if(xmax>gridMatrix.size.x-1) {
+		xmax = 0;
+	}
+	if(ymin<0) {
+		ymin = gridMatrix.size.y-1;
+	}
+
+	if(ymax>gridMatrix.size.y-1) {
+		ymax = 0;
+	}
+
+	gridMatrix.cell[x][ymin][1]+=1;
+	gridMatrix.cell[x][ymax][1]+=1;
+	gridMatrix.cell[xmin][y][1]+=1;
+	gridMatrix.cell[xmin][ymin][1]+=1;
+	gridMatrix.cell[xmin][ymax][1]+=1;
+	gridMatrix.cell[xmax][y][1]+=1;
+	gridMatrix.cell[xmax][ymin][1]+=1;
+	gridMatrix.cell[xmax][ymax][1]+=1;
+}
+
+function countNeighbours() {
+	for (var a = 0; a < gridMatrix.cell.length; a++) {
+		for(var b = 0; b < gridMatrix.cell[0].length; b++) {
+			if(gridMatrix.cell[a][b][0]==1) {	
+				addNeighbours(a,b);
+			}
+		}
+	}
+}
+
+function drawCells() {
+	for (var a = 0; a<gridMatrix.size.x; a++) {
+		var b = 0;
+		while(b < gridMatrix.size.y) {
+			if (gridMatrix.cell[a][b][0] == 1) {
+				ctx.fillStyle = box.colorLive;
+				ctx.fillRect(step*a+1, step*b+1, box.width, box.height);
+			} 
+			gridMatrix.cell[a][b][1] = 0;
+			b++;
+		}
+	}
+}
+
+function setNewCellStatus() {
+	for (var a = 0; a<gridMatrix.size.x; a++) {
+		var b = 0;
+		while(b < gridMatrix.size.y) {
+			var neighbours = gridMatrix.cell[a][b][1];
+			switch(neighbours) {
+				case 2 : if (gridMatrix.cell[a][b][0]==1) {gridMatrix.cell[a][b]=[1,0];} break;
+				case 3 : gridMatrix.cell[a][b]=[1,0]; break;
+				default : gridMatrix.cell[a][b]=[0,0];
+			}
+			b++;
+		}
+	}		
+}
+
+
+function iterate() {
+	countNeighbours();
+	setNewCellStatus();
+	gridMatrix.drawGrid();
+	drawCells();
+}
+
+function setStartingPosition(position) {
+	switch (position) {
+		case 'gosper-glider-gun' :
+			var offsetX = 0;
+			var offsetY = 4;
+			setCellStatus(5+offsetX,5+offsetY,1);
+			setCellStatus(6+offsetX,5+offsetY,1);
+			setCellStatus(5+offsetX,6+offsetY,1);
+			setCellStatus(6+offsetX,6+offsetY,1); 
+			setCellStatus(15+offsetX,5+offsetY,1);
+			setCellStatus(15+offsetX,6+offsetY,1);
+			setCellStatus(15+offsetX,7+offsetY,1); 
+			setCellStatus(16+offsetX,4+offsetY,1);
+			setCellStatus(16+offsetX,8+offsetY,1);
+			setCellStatus(17+offsetX,3+offsetY,1);
+			setCellStatus(18+offsetX,3+offsetY,1);
+			setCellStatus(17+offsetX,9+offsetY,1);
+			setCellStatus(18+offsetX,9+offsetY,1);
+			setCellStatus(19+offsetX,6+offsetY,1); 
+			setCellStatus(20+offsetX,4+offsetY,1);
+			setCellStatus(20+offsetX,8+offsetY,1); 
+			setCellStatus(21+offsetX,5+offsetY,1);
+			setCellStatus(21+offsetX,6+offsetY,1);
+			setCellStatus(21+offsetX,7+offsetY,1); 
+			setCellStatus(22+offsetX,6+offsetY,1); 
+			setCellStatus(25+offsetX,4+offsetY,1);
+			setCellStatus(25+offsetX,5+offsetY,1);
+			setCellStatus(26+offsetX,4+offsetY,1);
+			setCellStatus(26+offsetX,5+offsetY,1);
+			setCellStatus(25+offsetX,3+offsetY,1);
+			setCellStatus(26+offsetX,3+offsetY,1); 
+			setCellStatus(27+offsetX,2+offsetY,1);
+			setCellStatus(27+offsetX,6+offsetY,1); 
+			setCellStatus(29+offsetX,2+offsetY,1);
+			setCellStatus(29+offsetX,6+offsetY,1);
+			setCellStatus(29+offsetX,1+offsetY,1);
+			setCellStatus(29+offsetX,7+offsetY,1);
+			setCellStatus(39+offsetX,3+offsetY,1);
+			setCellStatus(40+offsetX,3+offsetY,1);
+			setCellStatus(39+offsetX,4+offsetY,1);
+			setCellStatus(40+offsetX,4+offsetY,1);
+			drawCells();
+			break;
+		case 'acorn' :
+		default : 
+			var offsetX = 25;
+			var offsetY = 10;
+			setCellStatus(19+offsetX,11+offsetY,1);
+			setCellStatus(20+offsetX,11+offsetY,1);
+			setCellStatus(20+offsetX,9+offsetY,1);
+			setCellStatus(22+offsetX,10+offsetY,1);
+			setCellStatus(23+offsetX,11+offsetY,1);
+			setCellStatus(24+offsetX,11+offsetY,1);
+			setCellStatus(25+offsetX,11+offsetY,1);	
+			drawCells();	
+			break;
+	}
+} 
+
+var automation = {
+	start : function() {
+		if (!animate) {
+			animate = window.setInterval(function(){
+				iterate();
+			},pace);	
+		}
+	},
+	stop : function() {
+		window.clearInterval(animate);
+		animate = null;
+	},
+	reset : function(seed) {
+		window.clearInterval(animate);
+		animate = null;
+		gridMatrix.resetGrid();
+		gridMatrix.drawGrid();
+		setStartingPosition(seed);
+	}
+};
+
+// initial call
+
+gridMatrix.drawGrid();
+gridMatrix.populateGrid();
+setStartingPosition('acorn');
+
+</script>
+
+    </body>
+</html>
